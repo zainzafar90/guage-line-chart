@@ -1,19 +1,46 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 
 export default function Home() {
+  const [value, setValue] = useState(95);
+  const MAX_VALUE = 100;
+  const backgrounds = [
+    // Red
+    "radial-gradient(circle, rgba(255, 51, 51, 0.25) 0%,rgba(255, 51, 51, 0.01)  50%, rgba(75, 0, 0, 0.3) 100%)",
+    // Light Red
+    "radial-gradient(circle, rgba(255, 51, 51, 0.15) 0%, rgba(255, 51, 51, 0.05)  50%, rgba(75, 0, 0, 0.3) 100%)",
+    // Yellow
+    "radial-gradient(circle, rgba(255, 255, 51, 0.15) 0%, rgba(255, 255, 51, 0.05)  50%, rgba(75, 75, 0, 0.3) 100%)",
+    // Green
+    "radial-gradient(circle, rgba(51, 255, 8 , 0.15) 0%,  rgba(51, 255, 8 , 0.05) 50%, rgba(0, 75, 18, 0.3) 100%)",
+    // Dark Green
+    "radial-gradient(circle, rgba(51, 255, 51, 0.15) 0%, rgba(51, 255, 51, 0.05) 50%, rgba(0, 75, 0, 0.3) 100%)",
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setValue(Math.floor(Math.random() * MAX_VALUE));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="bg-gray-800 text-white flex flex-col space-y-3 p-10">
+      <div
+        className="flex flex-col space-y-4 justify-center pt-0 px-10 pb-16"
+        style={{
+          background: backgrounds[Math.floor((value / MAX_VALUE) * 5)],
+        }}
+      >
         <div className="relative min-h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <GaugeChart max={100} value={50} />
+            <GaugeChart max={MAX_VALUE} value={value} />
           </ResponsiveContainer>
         </div>
 
-        <div className="relative flex flex-col space-y-2 max-w-xs mx-auto -top-12">
+        <div className="relative flex flex-col space-y-1 max-w-xs mx-auto -top-12">
           <p className="text-center text-lg">Meeting is going well! Dive...</p>
 
           <p className="text-center text-sm opacity-60">
@@ -75,13 +102,12 @@ export const LineChartsDemo = () => {
   );
 };
 
-const RADIAN = Math.PI / 180;
 const guageData = [
-  { name: "A", value: 20, color: "#e63946" },
-  { name: "B", value: 15, color: "#ffb703" },
-  { name: "C", value: 30, color: "#ffd60a" },
-  { name: "D", value: 15, color: "#06d6a0" },
-  { name: "E", value: 20, color: "#2ec4b6" },
+  { name: "A", value: 20, color: "#e76f51" },
+  { name: "B", value: 15, color: "#f4a261" },
+  { name: "C", value: 30, color: "#e9c46a" },
+  { name: "D", value: 15, color: "#2a9d8f" },
+  { name: "E", value: 20, color: "#264653" },
 ];
 
 const GaugeChart = ({ value, max }: { value: number; max: number }) => {
@@ -92,20 +118,46 @@ const GaugeChart = ({ value, max }: { value: number; max: number }) => {
 
   const angle = fraction * 180 - 180;
 
+  const outerStartRadius = 110;
+  const totalSections = 5;
+  const sectionDegree = 180 / totalSections; // Degree covered by each section
+  const gapDegree = 2; // Degree of the gap between sections
+
+  const generateSectionPath = (sectionIndex: number) => {
+    // Calculating the start and end angle for the outer arc
+    const startAngle = -180 + sectionIndex * sectionDegree + gapDegree / 2;
+    const endAngle = startAngle + sectionDegree - gapDegree;
+
+    // Convert angles from degrees to radians
+    const startRadians = (startAngle * Math.PI) / 180;
+    const endRadians = (endAngle * Math.PI) / 180;
+
+    // Calculate start and end points for the outer arc
+    const startX = gaugeCenterX + outerStartRadius * Math.cos(startRadians);
+    const startY = gaugeCenterY + outerStartRadius * Math.sin(startRadians);
+    const endX = gaugeCenterX + outerStartRadius * Math.cos(endRadians);
+    const endY = gaugeCenterY + outerStartRadius * Math.sin(endRadians);
+
+    return `M ${startX} ${startY} A ${outerStartRadius} ${outerStartRadius} 0 0 1 ${endX} ${endY}`;
+  };
+
+  const colors = guageData.map((d) => d.color);
+
+  const active = Math.floor(fraction * totalSections);
+
   return (
     <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
-      <g>
+      {[...Array(totalSections)].map((_, index) => (
         <path
-          fill="#f2f2f2"
-          d="M 63.128750000000025 215.49999999999997 A 136.87124999999997 136.87124999999997 0 0 1 336.87118156438066 215.36312877281193 L 286.4449567775036 215.41355501440754 A 86.445 86.445 0 0 0 113.555 215.5 Z"
+          key={index}
+          d={generateSectionPath(index)}
+          fill="none"
+          stroke={colors[index]} // Stroke color
+          strokeWidth="50" // Stroke width
+          strokeOpacity={index == active ? 1 : 0.5} // Stroke opacity
         />
-      </g>
-      <g>
-        <path
-          fill="#4cd774"
-          d="M 63.128750000000025 215.49999999999997 A 136.87124999999997 136.87124999999997 0 0 1 242.1653488710621 85.2854753449366 L 226.63074665540765 133.25924758627573 A 86.445 86.445 0 0 0 113.555 215.5 Z"
-        />
-      </g>
+      ))}
+
       <g>
         <path
           fill="none"
